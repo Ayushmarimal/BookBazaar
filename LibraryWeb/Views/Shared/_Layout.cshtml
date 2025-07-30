@@ -1,0 +1,331 @@
+﻿@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@{
+    var token = Context.Session.GetString("JWTToken");
+    string? loggedInUserEmail = null;
+    string? loggedInUserFullName = null;
+    bool isAuthenticated = false;
+    bool isAdmin = false;
+
+    if (!string.IsNullOrEmpty(token))
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            
+            loggedInUserEmail = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value
+                             ?? jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+
+            loggedInUserFullName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value
+            ?? jwtToken.Claims.FirstOrDefault(c => c.Type == "fullName")?.Value;
+            
+            // Check if user is admin from JWT token
+            var roleClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            isAdmin = roleClaim == "Admin";
+            isAuthenticated = true;
+        }
+        catch (Exception)
+        {
+            // Token is invalid, clear it
+            Context.Session.Remove("JWTToken");
+            isAuthenticated = false;
+            isAdmin = false;
+        }
+    }
+
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BookBazaarWeb</title>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#2563eb',
+                        'primary-dark': '#1d4ed8',
+                        'slate-700': '#334155',
+                        'slate-800': '#1e293b',
+                        'slate-600': '#475569',
+                        'slate-500': '#64748b',
+                        'slate-400': '#94a3b8',
+                        'slate-300': '#cbd5e1',
+                        'slate-200': '#e2e8f0'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <nav class="bg-gradient-to-r from-slate-800 to-slate-700 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <!-- Logo -->
+                    <div class="flex items-center">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="flex items-center text-white hover:text-gray-200 transition-colors duration-200">
+                            <img src="~/images/Logo 2.png" alt="BookBazaar Logo" class="h-10 w-auto mr-3" />
+                            <span class="text-xl font-bold">BookBazaar</span>
+                        </a>
+                    </div>
+
+                    <!-- Desktop Navigation -->
+                    <div class="hidden md:flex items-center space-x-1">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" 
+                           class="px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 flex items-center gap-2 @(currentController == "Home" && currentAction == "Index" ? "bg-white bg-opacity-15 font-semibold" : "")">
+                            <i class="fas fa-home"></i>Home
+                        </a>
+                        
+                        <a href="@Url.Action("BrowseBooks", "Home")" 
+                           class="px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 flex items-center gap-2 @(currentController == "Books" ? "bg-white bg-opacity-15 font-semibold" : "")">
+                            <i class="fas fa-book"></i>Browse Books
+                        </a>
+                        
+                        @if (!string.IsNullOrEmpty(token))
+                        {
+                            <a asp-controller="Cart" asp-action="Index" 
+                               class="px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 flex items-center gap-2 @(currentController == "Cart" ? "bg-white bg-opacity-15 font-semibold" : "")">
+                                <i class="fas fa-shopping-cart"></i>Cart
+                            </a>
+                            
+                            <a asp-controller="Bookmarks" asp-action="Index" 
+                               class="px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 flex items-center gap-2 @(currentController == "Bookmarks" ? "bg-white bg-opacity-15 font-semibold" : "")">
+                                <i class="fas fa-bookmark"></i>Bookmarks
+                            </a>
+                            
+                            <a asp-controller="Orders" asp-action="Index" 
+                               class="px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 flex items-center gap-2 @(currentController == "Orders" ? "bg-white bg-opacity-15 font-semibold" : "")">
+                                <i class="fas fa-receipt"></i>Orders
+                            </a>
+                            
+                            @if (isAdmin)
+                            {
+                                <a asp-controller="AdminBooks" asp-action="Index" 
+                                   class="px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 flex items-center gap-2 @(currentController == "AdminBooks" ? "bg-white bg-opacity-15 font-semibold" : "")">
+                                    <i class="fas fa-cog"></i>Admin Portal
+                                </a>
+                            }
+                        }
+                    </div>
+
+                    <!-- Auth Buttons -->
+                    <div class="hidden md:flex items-center space-x-3">
+                        @if (!string.IsNullOrEmpty(token))
+                        {
+                            <span class="text-white text-sm">Welcome, @(loggedInUserFullName ?? "User")!</span>
+                            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="inline">
+                                <button type="submit" class="px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 flex items-center gap-2">
+                                    <i class="fas fa-sign-out-alt"></i>Logout
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a asp-area="" asp-controller="Account" asp-action="Login" 
+                               class="px-4 py-2 text-white border border-white border-opacity-30 hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 flex items-center gap-2">
+                                <i class="fas fa-sign-in-alt"></i>Login
+                            </a>
+                            <a asp-area="" asp-controller="Account" asp-action="Register" 
+                               class="px-4 py-2 bg-primary text-white hover:bg-primary-dark rounded-md transition-all duration-200 flex items-center gap-2">
+                                <i class="fas fa-user-plus"></i>Register
+                            </a>
+                        }
+                    </div>
+
+                    <!-- Mobile menu button -->
+                    <div class="md:hidden">
+                        <button id="mobile-menu-button" class="text-white hover:text-gray-200 focus:outline-none">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Navigation Menu -->
+                <div id="mobile-menu" class="md:hidden hidden bg-slate-700 rounded-lg mt-2 p-4">
+                    <div class="space-y-2">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" 
+                           class="block px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200">
+                            <i class="fas fa-home mr-2"></i>Home
+                        </a>
+                        
+                        <a href="@Url.Action("BrowseBooks", "Home")" 
+                           class="block px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200">
+                            <i class="fas fa-book mr-2"></i>Browse Books
+                        </a>
+                        
+                        @if (!string.IsNullOrEmpty(token))
+                        {
+                            <a asp-controller="Cart" asp-action="Index" 
+                               class="block px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200">
+                                <i class="fas fa-shopping-cart mr-2"></i>Cart
+                            </a>
+                            
+                            <a asp-controller="Bookmarks" asp-action="Index" 
+                               class="block px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200">
+                                <i class="fas fa-bookmark mr-2"></i>Bookmarks
+                            </a>
+                            
+                            <a asp-controller="Orders" asp-action="Index" 
+                               class="block px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200">
+                                <i class="fas fa-receipt mr-2"></i>Orders
+                            </a>
+                            
+                            @if (isAdmin)
+                            {
+                                <a asp-controller="AdminBooks" asp-action="Index" 
+                                   class="block px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200">
+                                    <i class="fas fa-cog mr-2"></i>Admin Portal
+                                </a>
+                            }
+                        }
+
+                        <!-- Mobile Auth Buttons -->
+                        <div class="pt-4 border-t border-white border-opacity-20">
+                            @if (!string.IsNullOrEmpty(token))
+                            {
+                                <div class="text-white text-sm mb-3">Welcome, @(loggedInUserFullName ?? "User")!</div>
+                                <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                                    <button type="submit" class="block w-full px-4 py-2 text-white hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 text-left">
+                                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a asp-area="" asp-controller="Account" asp-action="Login" 
+                                   class="block px-4 py-2 text-white border border-white border-opacity-30 hover:bg-white hover:bg-opacity-10 rounded-md transition-all duration-200 mb-2 text-center">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+                                </a>
+                                <a asp-area="" asp-controller="Account" asp-action="Register" 
+                                   class="block px-4 py-2 bg-primary text-white hover:bg-primary-dark rounded-md transition-all duration-200 text-center">
+                                    <i class="fas fa-user-plus mr-2"></i>Register
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex flex-col min-h-screen">
+        <main role="main" class="flex-grow">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="bg-gradient-to-r from-slate-800 to-slate-700 text-slate-200 py-12 mt-16 border-t border-slate-700">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Logo and Description -->
+                <div class="md:col-span-1">
+                    <div class="flex items-center mb-6">
+                        <img src="~/images/Logo 2.png" alt="BookBazaar Logo" class="h-12 w-auto mr-3" />
+                        <span class="text-2xl font-bold text-white">BookBazaar</span>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
+                        Your ultimate destination for discovering, purchasing, and enjoying books from all genres. 
+                        Join thousands of readers in their literary journey.
+                    </p>
+                </div>
+                
+                <!-- Quick Links -->
+                <div class="md:col-span-1">
+                    <h5 class="text-white text-lg font-semibold mb-6">Quick Links</h5>
+                    <ul class="space-y-3">
+                        <li>
+                            <a asp-controller="Home" asp-action="Index" 
+                               class="text-slate-400 hover:text-white transition-colors duration-200 text-sm flex items-center group">
+                                <i class="fas fa-home mr-2 group-hover:text-blue-400 transition-colors"></i>
+                                Home
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Books" asp-action="Index" 
+                               class="text-slate-400 hover:text-white transition-colors duration-200 text-sm flex items-center group">
+                                <i class="fas fa-book mr-2 group-hover:text-blue-400 transition-colors"></i>
+                                Browse Books
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Home" asp-action="Privacy" 
+                               class="text-slate-400 hover:text-white transition-colors duration-200 text-sm flex items-center group">
+                                <i class="fas fa-shield-alt mr-2 group-hover:text-blue-400 transition-colors"></i>
+                                Privacy Policy
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Connect With Us -->
+                <div class="md:col-span-1">
+                    <h5 class="text-white text-lg font-semibold mb-6">Connect With Us</h5>
+                    <div class="flex gap-4 mb-6">
+                        <a href="#" class="w-12 h-12 bg-slate-700 hover:bg-blue-600 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200 group">
+                            <i class="fab fa-facebook-f group-hover:scale-110 transition-transform"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-slate-700 hover:bg-blue-400 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200 group">
+                            <i class="fab fa-twitter group-hover:scale-110 transition-transform"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-slate-700 hover:bg-pink-600 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200 group">
+                            <i class="fab fa-instagram group-hover:scale-110 transition-transform"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-slate-700 hover:bg-blue-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-all duration-200 group">
+                            <i class="fab fa-linkedin-in group-hover:scale-110 transition-transform"></i>
+                        </a>
+                    </div>
+                    <p class="text-slate-400 text-xs">
+                        Follow us for book recommendations, author interviews, and literary news.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Divider -->
+            <div class="border-t border-slate-700 my-8"></div>
+            
+            <!-- Copyright -->
+            <div class="text-center">
+                <p class="text-slate-500 text-sm">
+                    &copy; @DateTime.Now.Year BookBazaar. All rights reserved. Made with 
+                    <i class="fas fa-heart text-red-500 mx-1"></i> 
+                    for book lovers.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Mobile menu toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        });
+    </script>
+                    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

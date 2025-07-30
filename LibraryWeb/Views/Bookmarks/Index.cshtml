@@ -1,0 +1,168 @@
+﻿@model List<LibraryWeb.Models.Book>
+
+@{
+    ViewData["Title"] = "My Bookmarks";
+}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mr-4">
+                <i class="fas fa-bookmark text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-light text-gray-900">My Bookmarks</h1>
+                <p class="text-gray-600">Your saved books for future reference</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    @if (TempData["NotificationMessage"] != null)
+    {
+        <div class="bg-purple-50 border border-purple-200 text-purple-800 rounded-lg p-4 mb-6 flex items-center" id="notificationMessage">
+            <i class="fas fa-info-circle mr-3"></i>
+            <span>@TempData["NotificationMessage"]</span>
+        </div>
+
+        <script>
+            setTimeout(() => {
+                const msg = document.getElementById('notificationMessage');
+                if (msg) {
+                    msg.style.transition = 'opacity 0.5s ease-out';
+                    msg.style.opacity = '0';
+                    setTimeout(() => msg.remove(), 500);
+                }
+            }, 5000);
+        </script>
+    }
+
+    @if (!Model.Any())
+    {
+        <!-- Empty Bookmarks -->
+        <div class="text-center py-16">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-bookmark text-gray-400 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">No bookmarks yet</h3>
+            <p class="text-gray-600 mb-6">Start exploring and bookmark books you're interested in.</p>
+            <a href="@Url.Action("BrowseBooks", "Home")" 
+               class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200">
+                <i class="fas fa-book mr-2"></i>
+                Browse Books
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Bookmarks Grid - showing count -->
+        <div class="mb-6">
+            <p class="text-gray-600">
+                <i class="fas fa-bookmark mr-2 text-purple-600"></i>
+                You have <span class="font-semibold text-purple-600">@Model.Count</span> bookmarked books
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var book in Model)
+            {
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="p-6">
+                        <!-- Book Header with Bookmark Icon -->
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">@book.Title</h3>
+                                <p class="text-purple-600 font-medium mb-2">by @book.Author</p>
+                            </div>
+                            <div class="ml-3">
+                                <i class="fas fa-bookmark text-purple-500 text-lg"></i>
+                            </div>
+                        </div>
+
+                        <!-- Book Details -->
+                        <div class="space-y-3 mb-6">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-500">Genre</span>
+                                <span class="bg-gray-100 px-2 py-1 rounded-full text-gray-700 text-xs font-medium">@book.Genre</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-500">Price</span>
+                                <span class="text-xl font-bold text-gray-900">$@book.Price</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-500">Availability</span>
+                                @if (book.InStock == 1)
+                                {
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        In Stock
+                                    </span>
+                                }
+                                else if (book.InStock == 0)
+                                {
+                                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                                        <i class="fas fa-times-circle mr-1"></i>
+                                        Out of Stock
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                                        <i class="fas fa-book mr-1"></i>
+                                        Library Only
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                            @if (book.InStock == 1)
+                            {
+                                <form method="post" asp-controller="Cart" asp-action="AddToCart" class="flex-1 mr-2">
+                                    <input type="hidden" name="bookId" value="@book.Id" />
+                                    <button type="submit" 
+                                            class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center text-sm font-medium">
+                                        <i class="fas fa-shopping-cart mr-2"></i>
+                                        Add to Cart
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <div class="flex-1 mr-2">
+                                    <button disabled 
+                                            class="w-full bg-gray-100 text-gray-400 py-2 px-4 rounded-lg cursor-not-allowed text-sm font-medium">
+                                        <i class="fas fa-ban mr-2"></i>
+                                        Unavailable
+                                    </button>
+                                </div>
+                            }
+                            
+                            <form method="post" asp-action="RemoveFromBookmark">
+                                <input type="hidden" name="bookId" value="@book.Id" />
+                                <button type="submit" 
+                                        class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 group"
+                                        title="Remove bookmark">
+                                    <i class="fas fa-bookmark-minus group-hover:scale-110 transition-transform"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Back to browsing -->
+        <div class="text-center mt-12">
+            <a href="@Url.Action("BrowseBooks", "Home")" 
+               class="inline-flex items-center px-6 py-3 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors duration-200">
+                <i class="fas fa-search mr-2"></i>
+                Find More Books
+            </a>
+        </div>
+    }
+</div>

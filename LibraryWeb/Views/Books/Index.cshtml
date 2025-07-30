@@ -1,0 +1,515 @@
+﻿@model LibraryWeb.Models.BooksViewModel
+
+@{
+    ViewData["Title"] = "Browse Books";
+    string[] categories = { "all", "bestsellers", "awardwinners", "newreleases", "newarrivals", "comingsoon", "deals" };
+}
+
+@if (TempData["NotificationMessage"] != null)
+{
+    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-lg fade-out" id="notificationMessage">
+        <div class="flex items-center">
+            <i class="fas fa-info-circle mr-2"></i>
+            @TempData["NotificationMessage"]
+        </div>
+    </div>
+    <script>
+        setTimeout(() => {
+            const msg = document.getElementById('notificationMessage');
+            if (msg) {
+                msg.style.transition = 'opacity 0.5s ease-out';
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 500);
+            }
+        }, 3000);
+    </script>
+}
+
+<!-- Main Container -->
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Page Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                Browse Books
+            </h1>
+            <p class="text-gray-600 text-xl max-w-2xl mx-auto">
+                Discover your next favorite read from our extensive collection of carefully curated books
+            </p>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-12 backdrop-blur-sm bg-white/95">
+            @using (Html.BeginForm("Index", "Books", FormMethod.Post, new { @class = "space-y-8" }))
+            {
+                
+                <!-- Search Section -->
+                <div class="border-b border-gray-100 pb-8">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-search text-white text-sm"></i>
+                        </div>
+                        Search Books
+                    </h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="relative">
+                            <input type="text" name="searchQuery" value="@Model.SearchQuery" 
+                                   class="w-full px-5 py-4 pl-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500" 
+                                   placeholder="Search by title, author, ISBN..." />
+                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <div class="relative">
+                            <input type="number" name="filterPriceMin" value="@Model.FilterPriceMin" 
+                                   class="w-full px-5 py-4 pl-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500" 
+                                   placeholder="Min Price" />
+                            <i class="fas fa-dollar-sign absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <div class="relative">
+                            <input type="number" name="filterPriceMax" value="@Model.FilterPriceMax" 
+                                   class="w-full px-5 py-4 pl-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500" 
+                                   placeholder="Max Price" />
+                            <i class="fas fa-dollar-sign absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Section -->
+                <div class="pb-8">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-filter text-white text-sm"></i>
+                        </div>
+                        Filter Options
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <select name="filterAuthor" class="w-full px-5 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white">
+                            <option value="">All Authors</option>
+                            @foreach (var author in Model.Books.Select(b => b.Author).Distinct())
+                            {
+                                @if (Model.FilterAuthor == author)
+                                {
+                                    <option value="@author" selected>@author</option>
+                                }
+                                else
+                                {
+                                    <option value="@author">@author</option>
+                                }
+                            }
+                        </select>
+
+                        <select name="filterGenre" class="w-full px-5 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white">
+                            <option value="">All Genres</option>
+                            @foreach (var genre in Model.Books.Select(b => b.Genre).Distinct())
+                            {
+                                @if (Model.FilterGenre == genre)
+                                {
+                                    <option value="@genre" selected>@genre</option>
+                                }
+                                else
+                                {
+                                    <option value="@genre">@genre</option>
+                                }
+                            }
+                        </select>
+
+                        <select name="filterAvailability" class="w-full px-5 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white">
+                            <option value="">All Availability</option>
+                            @if (Model.FilterAvailability == 1)
+                            {
+                                <option value="1" selected>Available</option>
+                            }
+                            else
+                            {
+                                <option value="1">Available</option>
+                            }
+                            @if (Model.FilterAvailability == 0)
+                            {
+                                <option value="0" selected>Out of Stock</option>
+                            }
+                            else
+                            {
+                                <option value="0">Out of Stock</option>
+                            }
+                            @if (Model.FilterAvailability == 2)
+                            {
+                                <option value="2" selected>Library-Only</option>
+                            }
+                            else
+                            {
+                                <option value="2">Library-Only</option>
+                            }
+                        </select>
+
+                                                <select name="sortOrder" class="w-full px-5 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 bg-white">
+                            @if (Model.SortOrder == "title")
+                            {
+                                <option value="title" selected>Sort by Title</option>
+                            }
+                            else
+                            {
+                                <option value="title">Sort by Title</option>
+                            }
+                            @if (Model.SortOrder == "publicationDate")
+                            {
+                                <option value="publicationDate" selected>Sort by Publication Date</option>
+                            }
+                            else
+                            {
+                                <option value="publicationDate">Sort by Publication Date</option>
+                            }
+                            @if (Model.SortOrder == "price")
+                            {
+                                <option value="price" selected>Sort by Price</option>
+                            }
+                            else
+                            {
+                                <option value="price">Sort by Price</option>
+                            }
+                            @if (Model.SortOrder == "popularity")
+                            {
+                                <option value="popularity" selected>Sort by Popularity</option>
+                            }
+                            else
+                            {
+                                <option value="popularity">Sort by Popularity</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Apply Filters Button -->
+                <div class="text-center">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-search mr-2"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            }
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="flex flex-wrap justify-center gap-2 mb-8">
+            @foreach (var cat in categories)
+            {
+                var label = cat
+                .Replace("awardwinners", "🏆 Award Winners")
+                .Replace("newreleases", "🆕 New Releases")
+                .Replace("newarrivals", "📦 New Arrivals")
+                .Replace("comingsoon", "⏳ Coming Soon")
+                .Replace("bestsellers", "📈 Best Sellers")
+                .Replace("deals", "💸 Deals")
+                .Replace("all", "📚 All Books");
+
+                <form method="post" asp-action="Index" class="inline">
+                    <input type="hidden" name="category" value="@cat" />
+                    <input type="hidden" name="searchQuery" value="@Model.SearchQuery" />
+                    <input type="hidden" name="filterAuthor" value="@Model.FilterAuthor" />
+                    <input type="hidden" name="filterGenre" value="@Model.FilterGenre" />
+                    <input type="hidden" name="filterPriceMin" value="@Model.FilterPriceMin" />
+                    <input type="hidden" name="filterPriceMax" value="@Model.FilterPriceMax" />
+                    <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
+                    <input type="hidden" name="filterAvailability" value="@Model.FilterAvailability" />
+                    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                    <button type="submit" class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 @(Model.Category?.Equals(cat, StringComparison.OrdinalIgnoreCase) == true ? "bg-blue-600 text-white shadow-lg" : "bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-gray-300")">
+                        @label
+                    </button>
+                </form>
+            }
+        </div>
+        <!-- Books Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            @foreach (var book in Model.Books)
+            {
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <!-- Book Header -->
+                    <div class="p-6 border-b border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2">@book.Title</h3>
+                        <p class="text-gray-600 text-sm">by @book.Author</p>
+                        <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mt-2">@book.Genre</span>
+                    </div>
+
+                    <!-- Book Body -->
+                    <div class="p-6">
+                        <!-- Price Section -->
+                        <div class="mb-4">
+                            @if (book.Discount > 0)
+                            {
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-gray-500 line-through text-sm">$@book.Price</span>
+                                    <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-medium">@(book.Discount * 100)% OFF</span>
+                                </div>
+                                <div class="text-2xl font-bold text-green-600">$@(Math.Round(book.Price * (1 - book.Discount), 2))</div>
+                            }
+                            else
+                            {
+                                <div class="text-2xl font-bold text-gray-900">$@book.Price</div>
+                            }
+                        </div>
+
+                        <!-- Stats Section -->
+                        <div class="flex justify-between items-center mb-4 text-sm">
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <span class="text-gray-700 font-medium">@book.Rating</span>
+                            </div>
+                            @{
+                                var (statusClass, statusText) = book.InStock switch
+                                {
+                                    0 => ("bg-red-100 text-red-800", "Out of Stock"),
+                                    1 => ("bg-green-100 text-green-800", "In Stock"),
+                                    2 => ("bg-yellow-100 text-yellow-800", "Library Only"),
+                                    _ => ("bg-gray-100 text-gray-800", "Unknown")
+                                };
+                            }
+                            <span class="@statusClass text-xs px-2 py-1 rounded-full font-medium">@statusText</span>
+                        </div>
+
+                        <!-- View Details Button -->
+                        <button onclick="openBookModal('@book.Id')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all duration-200 mb-3 flex items-center justify-center gap-2">
+                            <i class="fas fa-info-circle"></i>
+                            View Details
+                        </button>
+
+                        <!-- Action Buttons -->
+                        <div class="space-y-2">
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <div class="flex gap-2">
+                                    <form method="post" asp-controller="Books" asp-action="Bookmark" class="flex-1">
+                                        <input type="hidden" name="bookId" value="@book.Id" />
+                                        <button type="submit" class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                            <i class="fas fa-bookmark"></i>
+                                            Bookmark
+                                        </button>
+                                    </form>
+
+                                    @if (book.InStock == 1)
+                                    {
+                                        <form method="post" asp-controller="Cart" asp-action="AddToCart" class="flex-1">
+                                            <input type="hidden" name="bookId" value="@book.Id" />
+                                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                                                <i class="fas fa-cart-plus"></i>
+                                                Add to Cart
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <button disabled class="flex-1 bg-gray-300 text-gray-500 font-medium py-2 px-4 rounded-lg cursor-not-allowed flex items-center justify-center gap-2">
+                                            <i class="fas fa-times-circle"></i>
+                                            Not Available
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <a href="/Account/Login" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 text-center">
+                                    <i class="fas fa-lock mr-2"></i>
+                                    Login to Purchase
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+            }
+        </div>
+
+        <!-- Pagination -->
+        @if (ViewBag.TotalPages != null && (int)ViewBag.TotalPages > 1)
+        {
+            <div class="flex justify-center mt-12">
+                <nav class="flex space-x-1">
+                    @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                    {
+                        <form method="post" asp-controller="Books" asp-action="Index" class="inline">
+                            <input type="hidden" name="searchQuery" value="@Model.SearchQuery" />
+                            <input type="hidden" name="filterAuthor" value="@Model.FilterAuthor" />
+                            <input type="hidden" name="filterGenre" value="@Model.FilterGenre" />
+                            <input type="hidden" name="filterPriceMin" value="@Model.FilterPriceMin" />
+                            <input type="hidden" name="filterPriceMax" value="@Model.FilterPriceMax" />
+                            <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
+                            <input type="hidden" name="filterAvailability" value="@Model.FilterAvailability" />
+                            <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                            <input type="hidden" name="category" value="@Model.Category" />
+                            <button type="submit" name="page" value="@i" class="px-4 py-2 text-sm font-medium transition-all duration-200 @(i == (int)ViewBag.CurrentPage ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600") border border-gray-300 @(i == 1 ? "rounded-l-lg" : "") @(i == (int)ViewBag.TotalPages ? "rounded-r-lg" : "") @(i != 1 ? "-ml-px" : "")">
+                                @i
+                            </button>
+                        </form>
+                    }
+                </nav>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modern Modal System -->
+<div id="bookModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div id="modalContent">
+            <!-- Modal content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+@foreach (var book in Model.Books)
+{
+    <!-- Hidden Modal Content Templates -->
+    <div id="bookData-@book.Id" class="hidden">
+        <div class="flex justify-between items-center p-6 border-b border-gray-200">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">@book.Title</h2>
+                <p class="text-gray-600 text-lg">by @book.Author</p>
+            </div>
+            <button onclick="closeBookModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Book Information -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-book mr-2 text-blue-500"></i>
+                    Book Information
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div><strong>Author:</strong> @book.Author</div>
+                    <div><strong>Genre:</strong> @book.Genre</div>
+                    <div><strong>Language:</strong> @book.Language</div>
+                    <div><strong>Format:</strong> @book.Format</div>
+                    <div><strong>ISBN:</strong> @book.ISBN</div>
+                    <div><strong>Publication Date:</strong> @book.PublicationDate.ToString("MMMM d, yyyy")</div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-align-left mr-2 text-blue-500"></i>
+                    Description
+                </h3>
+                <p class="text-gray-700 leading-relaxed">@book.Description</p>
+            </div>
+
+            <!-- Status & Ratings -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-star mr-2 text-blue-500"></i>
+                    Status & Ratings
+                </h3>
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="flex items-center gap-1">
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <span class="font-medium">@book.Rating</span>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    @if (book.IsBestseller)
+                    {
+                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">🏆 Bestseller</span>
+                    }
+                    @if (book.HasAwards)
+                    {
+                        <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium">🥇 Award Winner</span>
+                    }
+                    @if (DateTime.Now.Subtract(book.PublicationDate).TotalDays < 30)
+                    {
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">🆕 New Release</span>
+                    }
+                    @if (DateTime.Now.Subtract(book.ListedDate).TotalDays < 14)
+                    {
+                        <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">📦 New Arrival</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Pricing & Availability -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-tag mr-2 text-blue-500"></i>
+                    Pricing & Availability
+                </h3>
+                <div class="space-y-2">
+                    @if (book.Discount > 0)
+                    {
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-500 line-through">$@book.Price</span>
+                            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-medium">@(book.Discount * 100)% OFF</span>
+                            <span class="text-2xl font-bold text-green-600">$@(Math.Round(book.Price * (1 - book.Discount), 2))</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-2xl font-bold text-gray-900">$@book.Price</div>
+                    }
+                    
+                    @{
+                        var (modalStatusClass, modalStatusText, modalStatusIcon) = book.InStock switch
+                        {
+                            0 => ("text-red-600", "Out of Stock", "fas fa-times-circle"),
+                            1 => ("text-green-600", "In Stock", "fas fa-check-circle"),
+                            2 => ("text-blue-600", "Library Only", "fas fa-building"),
+                            _ => ("text-gray-600", "Unknown", "fas fa-question-circle")
+                        };
+                    }
+                    <div class="flex items-center gap-2 @modalStatusClass">
+                        <i class="@modalStatusIcon"></i>
+                        <span class="font-medium">@modalStatusText</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-6 border-t border-gray-200 flex justify-between items-center">
+            <button onclick="closeBookModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                Close
+            </button>
+            @if (User.Identity.IsAuthenticated && book.InStock == 1)
+            {
+                <form method="post" asp-controller="Cart" asp-action="AddToCart" class="inline">
+                    <input type="hidden" name="bookId" value="@book.Id" />
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+                        <i class="fas fa-cart-plus"></i>
+                        Add to Cart
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+}
+
+<script>
+    function openBookModal(bookId) {
+        const modal = document.getElementById('bookModal');
+        const modalContent = document.getElementById('modalContent');
+        const bookData = document.getElementById('bookData-' + bookId);
+        
+        modalContent.innerHTML = bookData.innerHTML;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeBookModal() {
+        const modal = document.getElementById('bookModal');
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('bookModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeBookModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeBookModal();
+        }
+    });
+</script>
